@@ -52,30 +52,27 @@ defineExpose({ setError, setLoading });
 </script>
 
 <template>
-    <form class="w-full space-y-4" @submit.prevent="onSubmit">
+    <form class="w-full space-y-5" @submit.prevent="onSubmit">
         <div>
-            <label for="url" class="block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC] mb-1.5">
-                Link do YouTube
-            </label>
+            <label for="url" class="malu-label">Link do YouTube</label>
             <input
                 id="url"
                 v-model="url"
                 type="url"
-                placeholder="https://www.youtube.com/playlist?list=... ou watch?v=..."
-                class="w-full rounded-lg border border-[#e3e3e0] dark:border-[#3E3E3A] bg-white dark:bg-[#161615] px-4 py-3 text-sm text-[#1b1b18] dark:text-[#EDEDEC] placeholder:text-[#706f6c] focus:outline-none focus:ring-2 focus:ring-[#f53003]/30 dark:focus:ring-[#FF4433]/30"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="Playlist ou vídeo"
+                class="malu-input"
                 :disabled="loading"
             />
+            <p class="malu-muted mt-2">
+                Cole o link da playlist ou de um álbum em um único vídeo.
+            </p>
         </div>
 
-        <p v-if="localError" class="text-sm text-[#f53003] dark:text-[#FF4433]">
-            {{ localError }}
-        </p>
+        <p v-if="localError" class="malu-error">{{ localError }}</p>
 
-        <button
-            type="submit"
-            class="w-full rounded-lg bg-[#1b1b18] dark:bg-[#eeeeec] text-white dark:text-[#1C1C1A] py-3 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="loading"
-        >
+        <button type="submit" class="malu-btn-primary" :disabled="loading">
             {{ loading ? 'Carregando…' : 'Listar músicas' }}
         </button>
     </form>

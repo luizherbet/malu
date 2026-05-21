@@ -1,12 +1,49 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { fetchConfig, fetchUser, logout } from './api/auth';
 import { previewPlaylist } from './api/downloads';
+import AppHeader from './components/AppHeader.vue';
+import AuthPanel from './components/AuthPanel.vue';
 import DownloadForm from './components/DownloadForm.vue';
 import PlaylistTrackList from './components/PlaylistTrackList.vue';
 
-const appName = import.meta.env.VITE_APP_NAME ?? 'Malu';
+const appName = ref(import.meta.env.VITE_APP_NAME ?? 'Malu');
+const config = ref(null);
+const user = ref(null);
+const booting = ref(true);
 const formRef = ref(null);
 const playlist = ref(null);
+
+async function loadSession() {
+    const [configResponse, userResponse] = await Promise.all([
+        fetchConfig(),
+        fetchUser(),
+    ]);
+
+    config.value = configResponse.data;
+    appName.value = configResponse.data.app_name ?? appName.value;
+    user.value = userResponse.data;
+}
+
+onMounted(async () => {
+    try {
+        await loadSession();
+    } finally {
+        booting.value = false;
+    }
+});
+
+const needsAuth = () => config.value?.require_auth && !user.value;
+
+async function handleAuthenticated() {
+    await loadSession();
+}
+
+async function handleLogout() {
+    await logout();
+    user.value = null;
+    playlist.value = null;
+}
 
 async function handlePreview({ url }) {
     formRef.value?.setLoading(true);
@@ -15,6 +52,9 @@ async function handlePreview({ url }) {
         const { data } = await previewPlaylist(url);
         playlist.value = data;
     } catch (error) {
+        if (error.status === 401) {
+            user.value = null;
+        }
         formRef.value?.setError(error.message);
     } finally {
         formRef.value?.setLoading(false);
@@ -27,28 +67,48 @@ function reset() {
 </script>
 
 <template>
-    <main
-        class="min-h-screen flex flex-col items-center justify-center p-6 lg:p-10 bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] dark:text-[#EDEDEC]"
-    >
-        <div class="w-full max-w-lg">
-            <header class="text-center mb-8">
-                <h1 class="text-3xl font-semibold tracking-tight">{{ appName }}</h1>
-                <p class="mt-2 text-[#706f6c] dark:text-[#A1A09A] text-sm">
-                    Cole um link de playlist ou vídeo, escolha cada música e baixe em MP3.
-                </p>
-            </header>
-
-            <div
-                class="rounded-2xl border border-[#e3e3e0] dark:border-[#3E3E3A] bg-white dark:bg-[#161615] p-6 shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"
-            >
-                <DownloadForm v-if="!playlist" ref="formRef" @preview="handlePreview" />
-                <PlaylistTrackList
-                    v-else
-                    :source-url="playlist.source_url"
-                    :tracks="playlist.tracks"
-                    @back="reset"
-                />
+    <div class="min-h-dvh bg-stone-50 dark:bg-stone-950">
+        <main class="malu-shell flex min-h-dvh flex-col justify-center">
+            <div v-if="booting" class="malu-card py-12 text-center">
+                <p class="malu-muted">Carregando…</p>
             </div>
-        </div>
-    </main>
+
+            <template v-else>
+                <AppHeader
+                    :app-name="appName"
+                    :user="user"
+                    @logout="handleLogout"
+                />
+
+                <div class="malu-card">
+                    <AuthPanel
+                        v-if="needsAuth()"
+                        :allow-registration="config?.allow_registration ?? false"
+                        @authenticated="handleAuthenticated"
+                    />
+
+                    <template v-else>
+                        <DownloadForm
+                            v-if="!playlist"
+                            ref="formRef"
+                            @preview="handlePreview"
+                        />
+                        <PlaylistTrackList
+                            v-else
+                            :source-url="playlist.source_url"
+                            :tracks="playlist.tracks"
+                            @back="reset"
+                        />
+                    </template>
+                </div>
+
+                <p
+                    v-if="!needsAuth() && !booting"
+                    class="malu-muted mt-4 text-center text-xs leading-relaxed"
+                >
+                    Uso pessoal. Respeite os direitos autorais das músicas.
+                </p>
+            </template>
+        </main>
+    </div>
 </template>

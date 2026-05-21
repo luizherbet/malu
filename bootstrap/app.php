@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureAuthenticatedWhenRequired;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,7 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->append(SecurityHeaders::class);
+
+        $middleware->alias([
+            'malu.auth' => EnsureAuthenticatedWhenRequired::class,
+        ]);
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('downloads:expire-stale')->everyFiveMinutes();

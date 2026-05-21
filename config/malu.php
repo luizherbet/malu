@@ -2,6 +2,10 @@
 
 return [
 
+    'require_auth' => (bool) env('MALU_REQUIRE_AUTH', false),
+
+    'allow_registration' => (bool) env('MALU_ALLOW_REGISTRATION', true),
+
     'rate_limit' => [
         'store' => (int) env('DOWNLOAD_RATE_LIMIT_STORE', 10),
         'read' => (int) env('DOWNLOAD_RATE_LIMIT_READ', 60),

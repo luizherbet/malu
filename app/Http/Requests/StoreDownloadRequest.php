@@ -10,7 +10,7 @@ class StoreDownloadRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null || ! config('malu.require_auth');
     }
 
     protected function prepareForValidation(): void

@@ -18,7 +18,15 @@ class DownloadController extends Controller
 {
     public function store(StoreDownloadRequest $request): JsonResponse
     {
-        $download = Download::create($request->validated());
+        $this->authorize('create', Download::class);
+
+        $data = $request->validated();
+
+        if ($request->user() !== null) {
+            $data['user_id'] = $request->user()->id;
+        }
+
+        $download = Download::create($data);
 
         ProcessDownloadJob::dispatch($download);
 
@@ -29,11 +37,15 @@ class DownloadController extends Controller
 
     public function show(Download $download): DownloadResource
     {
+        $this->authorize('view', $download);
+
         return DownloadResource::make($download);
     }
 
     public function file(Download $download, Request $request): StreamedResponse
     {
+        $this->authorize('view', $download);
+
         if ($download->status !== DownloadStatus::Done) {
             abort(404, 'File is not ready.');
         }
