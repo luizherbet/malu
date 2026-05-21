@@ -4,6 +4,8 @@ Serviço web para baixar mídia a partir de links (YouTube e outros suportados p
 
 **Stack:** Laravel 13, Vue 3, Vite, Redis (filas), yt-dlp + ffmpeg.
 
+Documentação de arquitetura: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Requisitos
 
 - PHP 8.3+
@@ -65,3 +67,9 @@ Variáveis no `.env`:
 - `DOWNLOAD_STALE_PROCESSING_MINUTES` (padrão: 15; alinhar com `YTDLP_TIMEOUT`)
 - `DOWNLOAD_RETENTION_HOURS` (padrão: 24)
 - `DOWNLOAD_PRUNE_RECORDS` (padrão: true)
+
+## Testes
+
+```bash
+php artisan test
+```
