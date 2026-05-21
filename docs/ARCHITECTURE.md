@@ -70,6 +70,16 @@ docker compose up --build
 
 Detalhes em [DOCKER.md](DOCKER.md).
 
+Deploy em produção: [DEPLOY.md](DEPLOY.md).
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci.yml`):
+
+- `php artisan test`
+- `pint --test`
+- Build da imagem Docker (`production`)
+
 ## Operação
 
 | Comando | Frequência (scheduler) | Função |

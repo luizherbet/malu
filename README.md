@@ -1,5 +1,7 @@
 # Malu
 
+[![CI](https://github.com/luizherbet/malu/actions/workflows/ci.yml/badge.svg)](https://github.com/luizherbet/malu/actions/workflows/ci.yml)
+
 Serviço web para baixar mídia a partir de links (YouTube e outros suportados pelo [yt-dlp](https://github.com/yt-dlp/yt-dlp)).
 
 **Stack:** Laravel 13, Vue 3, Vite, Redis (filas), yt-dlp + ffmpeg.
@@ -13,6 +15,8 @@ docker compose up --build
 ```
 
 Guia completo: [docs/DOCKER.md](docs/DOCKER.md).
+
+Produção: [docs/DEPLOY.md](docs/DEPLOY.md) e `docker compose -f docker-compose.prod.yml up -d --build`.
 
 ## Requisitos
 
