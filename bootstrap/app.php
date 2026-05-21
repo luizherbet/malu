@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\EnsureAuthenticatedWhenRequired;
+use App\Http\Middleware\AuthenticateJwt;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([
-            'malu.auth' => EnsureAuthenticatedWhenRequired::class,
+            'jwt.auth' => AuthenticateJwt::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule): void {

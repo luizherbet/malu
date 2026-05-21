@@ -13,7 +13,7 @@ class AppConfigController extends Controller
             'data' => [
                 'app_name' => config('app.name'),
                 'require_auth' => config('malu.require_auth'),
-                'allow_registration' => config('malu.allow_registration'),
+                'login_email' => config('malu.auth_email'),
             ],
         ]);
     }

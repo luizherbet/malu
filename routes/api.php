@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/config', AppConfigController::class)->name('config');
 
-Route::middleware('web')->group(function (): void {
-    Route::get('/auth/user', [AuthController::class, 'user'])->name('auth.user');
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('guest')->name('auth.login');
-    Route::post('/auth/register', [AuthController::class, 'register'])->middleware('guest')->name('auth.register');
-    Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth')->name('auth.logout');
-});
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:6,1')
+    ->name('auth.login');
 
-Route::middleware(['web', 'malu.auth'])->group(function (): void {
+Route::middleware('jwt.auth')->group(function (): void {
+    Route::get('/auth/user', [AuthController::class, 'user'])->name('auth.user');
+    Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+
     Route::middleware('throttle:downloads-read')->group(function (): void {
         Route::post('/playlists/preview', [PlaylistController::class, 'preview'])->name('playlists.preview');
     });

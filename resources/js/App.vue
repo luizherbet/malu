@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { fetchConfig, fetchUser, logout } from './api/auth';
+import { clearToken, fetchConfig, fetchUser, getToken, logout } from './api/auth';
 import { previewPlaylist } from './api/downloads';
 import AppHeader from './components/AppHeader.vue';
 import AuthPanel from './components/AuthPanel.vue';
@@ -15,19 +15,26 @@ const formRef = ref(null);
 const playlist = ref(null);
 
 async function loadSession() {
-    const [configResponse, userResponse] = await Promise.all([
-        fetchConfig(),
-        fetchUser(),
-    ]);
-
+    const configResponse = await fetchConfig();
     config.value = configResponse.data;
     appName.value = configResponse.data.app_name ?? appName.value;
+
+    if (!config.value.require_auth || !getToken()) {
+        user.value = null;
+
+        return;
+    }
+
+    const userResponse = await fetchUser();
     user.value = userResponse.data;
 }
 
 onMounted(async () => {
     try {
         await loadSession();
+    } catch {
+        clearToken();
+        user.value = null;
     } finally {
         booting.value = false;
     }
@@ -35,8 +42,8 @@ onMounted(async () => {
 
 const needsAuth = () => config.value?.require_auth && !user.value;
 
-async function handleAuthenticated() {
-    await loadSession();
+async function handleAuthenticated(authUser) {
+    user.value = authUser;
 }
 
 async function handleLogout() {
@@ -83,7 +90,7 @@ function reset() {
                 <div class="malu-card">
                     <AuthPanel
                         v-if="needsAuth()"
-                        :allow-registration="config?.allow_registration ?? false"
+                        :login-email="config?.login_email ?? 'malu@malu.com'"
                         @authenticated="handleAuthenticated"
                     />
 

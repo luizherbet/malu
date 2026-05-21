@@ -1,27 +1,37 @@
-import { apiFetch } from './client';
+import { apiFetch, clearToken, getToken, setToken } from './client';
+
+export { clearToken, getToken, setToken };
 
 export function fetchConfig() {
     return apiFetch('/api/config');
 }
 
 export function fetchUser() {
+    const token = getToken();
+
+    if (!token) {
+        return Promise.resolve({ data: null });
+    }
+
     return apiFetch('/api/auth/user');
 }
 
-export function login(credentials) {
-    return apiFetch('/api/auth/login', {
+export async function login(credentials) {
+    const response = await apiFetch('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
+        skipAuth: true,
     });
+
+    setToken(response.data.token);
+
+    return response;
 }
 
-export function register(payload) {
-    return apiFetch('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-    });
-}
-
-export function logout() {
-    return apiFetch('/api/auth/logout', { method: 'POST' });
+export async function logout() {
+    try {
+        await apiFetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+        clearToken();
+    }
 }

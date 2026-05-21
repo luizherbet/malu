@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
-use App\Http\Requests\RegisterRequest;
-use App\Models\User;
+use App\Services\JwtService;
+use App\Services\MaluAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private MaluAuthService $maluAuth,
+        private JwtService $jwt,
+    ) {}
+
     public function user(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -32,38 +36,32 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        $user = $this->maluAuth->authenticate(
+            $request->validated('email'),
+            $request->validated('password'),
+        );
+
+        if ($user === null) {
             throw ValidationException::withMessages([
                 'email' => ['Credenciais inválidas.'],
             ]);
         }
 
-        $request->session()->regenerate();
-
-        return $this->user($request);
+        return response()->json([
+            'data' => [
+                'token' => $this->jwt->issue($user),
+                'token_type' => 'Bearer',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ],
+        ]);
     }
 
-    public function register(RegisterRequest $request): JsonResponse
+    public function logout(): JsonResponse
     {
-        if (! config('malu.allow_registration')) {
-            abort(403, 'Registration is disabled.');
-        }
-
-        $user = User::create($request->validated());
-
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return $this->user($request)->setStatusCode(201);
-    }
-
-    public function logout(Request $request): JsonResponse
-    {
-        Auth::guard('web')->logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
         return response()->json(['message' => 'Logged out.']);
     }
 }

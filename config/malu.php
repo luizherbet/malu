@@ -2,9 +2,15 @@
 
 return [
 
-    'require_auth' => (bool) env('MALU_REQUIRE_AUTH', false),
+    'require_auth' => (bool) env('MALU_REQUIRE_AUTH', true),
 
-    'allow_registration' => (bool) env('MALU_ALLOW_REGISTRATION', true),
+    'auth_email' => env('MALU_AUTH_EMAIL', 'malu@malu.com'),
+
+    'auth_password' => env('MALU_AUTH_PASSWORD'),
+
+    'jwt_secret' => env('MALU_JWT_SECRET') ?: env('APP_KEY'),
+
+    'jwt_ttl_minutes' => (int) env('MALU_JWT_TTL_MINUTES', 10080),
 
     'rate_limit' => [
         'store' => (int) env('DOWNLOAD_RATE_LIMIT_STORE', 10),

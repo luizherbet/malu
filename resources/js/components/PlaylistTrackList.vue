@@ -1,6 +1,6 @@
 <script setup>
 import { onUnmounted, reactive, ref } from 'vue';
-import { createDownload, fetchDownload } from '../api/downloads';
+import { createDownload, downloadJobFile, fetchDownload } from '../api/downloads';
 
 const props = defineProps({
     sourceUrl: {
@@ -17,6 +17,7 @@ const emit = defineEmits(['back']);
 
 const trackJobs = reactive({});
 const pollTimers = ref({});
+const downloadingFile = ref({});
 
 const terminalStatuses = ['done', 'failed'];
 
@@ -109,14 +110,39 @@ function isBusy(track) {
     return job && ['queued', 'processing'].includes(job.status);
 }
 
-function downloadHref(track) {
-    const job = jobFor(track);
+function isDone(track) {
+    return jobFor(track)?.status === 'done';
+}
 
-    if (job?.status === 'done') {
-        return job.download_url ?? job.tracks?.[0]?.url ?? null;
+function jobId(track) {
+    return jobFor(track)?.id ?? null;
+}
+
+async function saveTrackFile(track) {
+    const key = trackKey(track);
+    const id = jobId(track);
+
+    if (!id || downloadingFile.value[key]) {
+        return;
     }
 
-    return null;
+    downloadingFile.value[key] = true;
+
+    try {
+        await downloadJobFile(id);
+    } catch (error) {
+        const job = jobFor(track);
+
+        if (job) {
+            trackJobs[key] = {
+                ...job,
+                status: 'failed',
+                error: error.message,
+            };
+        }
+    } finally {
+        downloadingFile.value[key] = false;
+    }
 }
 
 function progressWidth(track) {
@@ -164,14 +190,15 @@ onUnmounted(stopAllPolling);
                     </div>
 
                     <div class="flex shrink-0 sm:pl-0 pl-11">
-                        <a
-                            v-if="downloadHref(track)"
-                            :href="downloadHref(track)"
+                        <button
+                            v-if="isDone(track)"
+                            type="button"
                             class="malu-btn-success w-full sm:w-auto"
-                            download
+                            :disabled="downloadingFile[trackKey(track)]"
+                            @click="saveTrackFile(track)"
                         >
-                            Baixar MP3
-                        </a>
+                            {{ downloadingFile[trackKey(track)] ? 'Salvando…' : 'Baixar MP3' }}
+                        </button>
                         <button
                             v-else
                             type="button"

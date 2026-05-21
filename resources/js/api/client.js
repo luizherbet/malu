@@ -1,28 +1,39 @@
-function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+const TOKEN_KEY = 'malu_token';
+
+export function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token) {
+    localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
 }
 
 export async function apiFetch(path, options = {}) {
     const headers = {
         Accept: 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
         ...options.headers,
     };
 
-    const method = (options.method ?? 'GET').toUpperCase();
+    if (!options.skipAuth) {
+        const token = getToken();
 
-    if (method !== 'GET' && method !== 'HEAD') {
-        headers['X-CSRF-TOKEN'] = csrfToken();
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
     }
 
     const response = await fetch(path, {
         ...options,
         headers,
-        credentials: 'same-origin',
     });
 
     if (response.status === 401) {
+        clearToken();
         const body = await response.json().catch(() => ({}));
         const error = new Error(body.message ?? 'Authentication required.');
         error.status = 401;
@@ -43,4 +54,39 @@ export async function apiFetch(path, options = {}) {
     }
 
     return response.json();
+}
+
+function filenameFromDisposition(header) {
+    if (!header) {
+        return 'track.mp3';
+    }
+
+    const match = header.match(/filename="?([^"]+)"?/i);
+
+    return match?.[1] ?? 'track.mp3';
+}
+
+export async function apiDownload(path) {
+    const token = getToken();
+    const headers = { Accept: 'application/octet-stream' };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(path, { headers });
+
+    if (response.status === 401) {
+        clearToken();
+        throw new Error('Authentication required.');
+    }
+
+    if (!response.ok) {
+        throw new Error(`Download failed (${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const filename = filenameFromDisposition(response.headers.get('Content-Disposition'));
+
+    return { blob, filename };
 }
