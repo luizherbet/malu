@@ -2,6 +2,8 @@
 
 Guia para colocar o Malu em produção usando a imagem Docker.
 
+**Sem servidor pago?** Use Oracle Cloud Always Free: [DEPLOY-ORACLE.md](DEPLOY-ORACLE.md).
+
 ## Requisitos do servidor
 
 - Docker 24+ e Compose v2 (ou runtime compatível)
@@ -14,7 +16,7 @@ Guia para colocar o Malu em produção usando a imagem Docker.
 docker build --target production -t malu:latest .
 ```
 
-A imagem inclui PHP 8.3, `yt-dlp`, `ffmpeg` e assets Vue já compilados.
+A imagem inclui PHP 8.4, `yt-dlp`, `ffmpeg` e assets Vue já compilados.
 
 ## Variáveis de ambiente
 

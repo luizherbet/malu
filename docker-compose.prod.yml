@@ -17,6 +17,7 @@ services:
     volumes:
       - storage:/var/www/html/storage/app/private
       - database:/var/www/html/database
+      - ./storage/app/private/cookies:/var/www/html/storage/app/private/cookies:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -33,6 +34,7 @@ services:
     volumes:
       - storage:/var/www/html/storage/app/private
       - database:/var/www/html/database
+      - ./storage/app/private/cookies:/var/www/html/storage/app/private/cookies:ro
     depends_on:
       redis:
         condition: service_healthy

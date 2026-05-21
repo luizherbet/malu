@@ -1,0 +1,7 @@
+{
+    email {$ACME_EMAIL:internal@localhost}
+}
+
+{$MALU_DOMAIN} {
+    reverse_proxy {$MALU_UPSTREAM}
+}

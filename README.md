@@ -18,6 +18,15 @@ Guia completo: [docs/DOCKER.md](docs/DOCKER.md).
 
 Produção: [docs/DEPLOY.md](docs/DEPLOY.md) e `docker compose -f docker-compose.prod.yml up -d --build`.
 
+**Oracle Cloud (grátis):** passo a passo em [docs/DEPLOY-ORACLE.md](docs/DEPLOY-ORACLE.md).
+
+**Teste no Mac (sem VPS):** [docs/DEPLOY-MAC-TUNNEL.md](docs/DEPLOY-MAC-TUNNEL.md) — Cloudflare Tunnel ou mesma Wi‑Fi.
+
+```bash
+./scripts/start-tunnel.sh      # link HTTPS para qualquer lugar
+./scripts/local-network.sh     # link na rede local
+```
+
 ## Requisitos
 
 - PHP 8.3+
