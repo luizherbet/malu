@@ -45,12 +45,23 @@ Ou manualmente:
 ```bash
 php artisan serve
 php artisan queue:work
+php artisan schedule:work
 npm run dev
 ```
 
-## Próximos passos
+## Manutenção (ops)
 
-1. Modelo e migration `downloads`
-2. Job `ProcessDownloadJob` com yt-dlp
-3. API e UI de colar link + progresso
-# malu
+Comandos agendados (timeout de jobs e limpeza de arquivos):
+
+```bash
+php artisan downloads:expire-stale   # jobs presos em queued/processing
+php artisan downloads:cleanup        # remove arquivos antigos
+php artisan schedule:work            # roda o agendador em dev
+```
+
+Variáveis no `.env`:
+
+- `DOWNLOAD_STALE_QUEUED_MINUTES` (padrão: 30)
+- `DOWNLOAD_STALE_PROCESSING_MINUTES` (padrão: 15; alinhar com `YTDLP_TIMEOUT`)
+- `DOWNLOAD_RETENTION_HOURS` (padrão: 24)
+- `DOWNLOAD_PRUNE_RECORDS` (padrão: true)
