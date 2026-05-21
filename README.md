@@ -6,6 +6,14 @@ Serviço web para baixar mídia a partir de links (YouTube e outros suportados p
 
 Documentação de arquitetura: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Docker (recomendado)
+
+```bash
+docker compose up --build
+```
+
+Guia completo: [docs/DOCKER.md](docs/DOCKER.md).
+
 ## Requisitos
 
 - PHP 8.3+

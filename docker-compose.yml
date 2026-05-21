@@ -1,0 +1,71 @@
+services:
+  app:
+    build:
+      context: .
+      target: development
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
+  queue:
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command:
+      [
+        "php",
+        "artisan",
+        "queue:work",
+        "--tries=1",
+        "--timeout=630",
+      ]
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  vendor:

@@ -60,6 +60,16 @@ queued → processing → done
 - `file_path` restrito ao prefixo `downloads/`.
 - Job com timeout alinhado a `YTDLP_TIMEOUT`.
 
+## Docker
+
+Para subir app + Redis + worker + scheduler:
+
+```bash
+docker compose up --build
+```
+
+Detalhes em [DOCKER.md](DOCKER.md).
+
 ## Operação
 
 | Comando | Frequência (scheduler) | Função |
