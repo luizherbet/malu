@@ -53,3 +53,4 @@ npm run dev
 1. Modelo e migration `downloads`
 2. Job `ProcessDownloadJob` com yt-dlp
 3. API e UI de colar link + progresso
+# malu
