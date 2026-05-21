@@ -30,6 +30,16 @@ class Download extends Model
 
     protected $keyType = 'string';
 
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => 'queued',
+        'progress' => 0,
+        'format' => 'mp4',
+        'quality' => 'best',
+    ];
+
     protected function casts(): array
     {
         return [
