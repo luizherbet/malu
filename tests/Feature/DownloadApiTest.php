@@ -45,6 +45,30 @@ class DownloadApiTest extends TestCase
             ->assertJsonValidationErrors(['url']);
     }
 
+    public function test_store_rejects_local_urls(): void
+    {
+        Queue::fake();
+
+        $response = $this->postJson('/api/jobs', [
+            'url' => 'https://127.0.0.1/video',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['url']);
+    }
+
+    public function test_store_is_rate_limited(): void
+    {
+        Queue::fake();
+        config(['malu.rate_limit.store' => 2]);
+
+        $payload = ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'];
+
+        $this->postJson('/api/jobs', $payload)->assertCreated();
+        $this->postJson('/api/jobs', $payload)->assertCreated();
+        $this->postJson('/api/jobs', $payload)->assertStatus(429);
+    }
+
     public function test_show_returns_download_status(): void
     {
         $download = Download::factory()->processing()->create();

@@ -8,6 +8,7 @@ use App\Http\Requests\StoreDownloadRequest;
 use App\Http\Resources\DownloadResource;
 use App\Jobs\ProcessDownloadJob;
 use App\Models\Download;
+use App\Support\MediaUrlValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -36,13 +37,17 @@ class DownloadController extends Controller
             abort(404, 'File is not ready.');
         }
 
+        if (! MediaUrlValidator::isSafeStoragePath($download->file_path)) {
+            abort(404, 'File not found.');
+        }
+
         if (! Storage::disk('local')->exists($download->file_path)) {
             abort(404, 'File not found.');
         }
 
-        return Storage::disk('local')->download(
-            $download->file_path,
-            basename($download->file_path),
-        );
+        $fileName = basename($download->file_path);
+        $fileName = preg_replace('/[^\w.\-()+ ]/u', '_', $fileName) ?: 'download';
+
+        return Storage::disk('local')->download($download->file_path, $fileName);
     }
 }

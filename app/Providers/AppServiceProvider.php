@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('downloads-store', function (Request $request) {
+            return Limit::perMinute(config('malu.rate_limit.store', 10))
+                ->by($request->ip());
+        });
+
+        RateLimiter::for('downloads-read', function (Request $request) {
+            return Limit::perMinute(config('malu.rate_limit.read', 60))
+                ->by($request->ip());
+        });
     }
 }
