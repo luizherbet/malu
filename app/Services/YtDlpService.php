@@ -18,18 +18,21 @@ class YtDlpService
         $command = $this->buildCommand($download, $outputTemplate);
 
         $timeout = config('services.ytdlp.timeout', 600);
-        $process = Process::timeout($timeout)->start($command);
 
-        while ($process->running()) {
-            $this->parseProgress($process->latestErrorOutput(), $onProgress);
-            usleep(250_000);
-        }
+        $result = Process::timeout($timeout)->run(
+            $command,
+            function (string $type, string $buffer) use ($onProgress): void {
+                if ($type === 'err') {
+                    $this->parseProgress($buffer, $onProgress);
+                }
+            },
+        );
 
-        $stderr = $process->errorOutput();
-        $this->parseProgress($stderr, $onProgress);
-
-        if (! $process->successful()) {
-            throw YtDlpException::fromProcess($process->exitCode() ?? 1, $stderr ?: $process->output());
+        if ($result->failed()) {
+            throw YtDlpException::fromProcess(
+                $result->exitCode() ?? 1,
+                $result->errorOutput() ?: $result->output(),
+            );
         }
 
         return $this->resolveOutputFile($directory);
