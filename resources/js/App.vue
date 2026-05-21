@@ -1,58 +1,29 @@
 <script setup>
-import { onUnmounted, ref } from 'vue';
-import { createDownload, fetchDownload } from './api/downloads';
+import { ref } from 'vue';
+import { previewPlaylist } from './api/downloads';
 import DownloadForm from './components/DownloadForm.vue';
-import DownloadProgress from './components/DownloadProgress.vue';
+import PlaylistTrackList from './components/PlaylistTrackList.vue';
 
 const appName = import.meta.env.VITE_APP_NAME ?? 'Malu';
 const formRef = ref(null);
-const job = ref(null);
-const pollTimer = ref(null);
+const playlist = ref(null);
 
-const terminalStatuses = ['done', 'failed'];
+async function handlePreview({ url }) {
+    formRef.value?.setLoading(true);
 
-function stopPolling() {
-    if (pollTimer.value !== null) {
-        clearInterval(pollTimer.value);
-        pollTimer.value = null;
-    }
-}
-
-async function refreshJob(id) {
-    const { data } = await fetchDownload(id);
-    job.value = data;
-
-    if (terminalStatuses.includes(data.status)) {
-        stopPolling();
-    }
-}
-
-function startPolling(id) {
-    stopPolling();
-
-    refreshJob(id).catch(() => stopPolling());
-
-    pollTimer.value = setInterval(() => {
-        refreshJob(id).catch(() => stopPolling());
-    }, 2000);
-}
-
-async function handleSubmit(payload) {
     try {
-        const { data } = await createDownload(payload);
-        job.value = data;
-        startPolling(data.id);
+        const { data } = await previewPlaylist(url);
+        playlist.value = data;
     } catch (error) {
         formRef.value?.setError(error.message);
+    } finally {
+        formRef.value?.setLoading(false);
     }
 }
 
 function reset() {
-    stopPolling();
-    job.value = null;
+    playlist.value = null;
 }
-
-onUnmounted(stopPolling);
 </script>
 
 <template>
@@ -63,15 +34,20 @@ onUnmounted(stopPolling);
             <header class="text-center mb-8">
                 <h1 class="text-3xl font-semibold tracking-tight">{{ appName }}</h1>
                 <p class="mt-2 text-[#706f6c] dark:text-[#A1A09A] text-sm">
-                    Cole o link e baixe vídeo ou áudio com um clique.
+                    Cole um link de playlist ou vídeo, escolha cada música e baixe em MP3.
                 </p>
             </header>
 
             <div
                 class="rounded-2xl border border-[#e3e3e0] dark:border-[#3E3E3A] bg-white dark:bg-[#161615] p-6 shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"
             >
-                <DownloadForm v-if="!job" ref="formRef" @submit="handleSubmit" />
-                <DownloadProgress v-else :job="job" @reset="reset" />
+                <DownloadForm v-if="!playlist" ref="formRef" @preview="handlePreview" />
+                <PlaylistTrackList
+                    v-else
+                    :source-url="playlist.source_url"
+                    :tracks="playlist.tracks"
+                    @back="reset"
+                />
             </div>
         </div>
     </main>

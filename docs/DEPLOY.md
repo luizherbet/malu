@@ -52,7 +52,7 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: redis
-    command: ["php", "artisan", "queue:work", "--tries=1", "--timeout=630"]
+    command: ["php", "artisan", "queue:work", "--tries=1", "--timeout=3720"]
     depends_on:
       - redis
     restart: unless-stopped

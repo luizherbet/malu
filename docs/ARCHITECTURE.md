@@ -90,7 +90,7 @@ GitHub Actions (`.github/workflows/ci.yml`):
 Em produção:
 
 ```bash
-php artisan queue:work --tries=1 --timeout=630
+php artisan queue:work --tries=1 --timeout=3720
 php artisan schedule:run  # via cron a cada minuto
 ```
 

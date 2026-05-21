@@ -17,6 +17,7 @@ class DownloadFactory extends Factory
     {
         return [
             'url' => 'https://www.youtube.com/watch?v='.$this->faker->regexify('[A-Za-z0-9_-]{11}'),
+            'download_playlist' => false,
             'status' => DownloadStatus::Queued,
             'progress' => 0,
             'format' => 'mp4',
@@ -41,7 +42,7 @@ class DownloadFactory extends Factory
         return $this->state(fn () => [
             'status' => DownloadStatus::Done,
             'progress' => 100,
-            'file_path' => 'downloads/'.$this->faker->uuid().'/video.mp4',
+            'file_path' => 'downloads/'.$this->faker->uuid().'/track.mp3',
             'finished_at' => now(),
         ]);
     }

@@ -66,19 +66,20 @@ class DownloadMaintenanceServiceTest extends TestCase
     {
         Carbon::setTestNow('2026-05-21 12:00:00');
 
-        $path = 'downloads/old-id/video.mp4';
-        Storage::disk('local')->put($path, 'content');
-
         $download = Download::factory()->done()->create([
-            'file_path' => $path,
+            'download_playlist' => true,
             'finished_at' => now()->subHours(25),
         ]);
+
+        $dir = "downloads/{$download->id}";
+        Storage::disk('local')->put("{$dir}/track.mp3", 'content');
+        $download->update(['file_path' => $dir]);
 
         $removed = $this->maintenance->cleanupExpiredFiles();
 
         $this->assertSame(1, $removed);
         $this->assertNull(Download::find($download->id));
-        Storage::disk('local')->assertMissing($path);
+        Storage::disk('local')->assertMissing("{$dir}/track.mp3");
     }
 
     protected function tearDown(): void

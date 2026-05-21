@@ -6,7 +6,7 @@ use App\Rules\AllowedMediaUrl;
 use App\Support\MediaUrlValidator;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreDownloadRequest extends FormRequest
+class PreviewPlaylistRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -29,23 +29,6 @@ class StoreDownloadRequest extends FormRequest
     {
         return [
             'url' => ['required', 'string', 'max:2048', new AllowedMediaUrl],
-            'section' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'download_playlist' => ['sometimes', 'boolean'],
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function validated($key = null, $default = null): array
-    {
-        $data = parent::validated($key, $default);
-
-        $data['download_playlist'] ??= false;
-        $data['section'] = filled($data['section'] ?? null) ? $data['section'] : null;
-        $data['format'] = 'mp3';
-        $data['quality'] = 'best';
-
-        return $data;
     }
 }

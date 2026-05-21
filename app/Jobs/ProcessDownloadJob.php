@@ -8,6 +8,7 @@ use App\Models\Download;
 use App\Services\YtDlpService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -21,7 +22,23 @@ class ProcessDownloadJob implements ShouldQueue
 
     public function __construct(public Download $download)
     {
-        $this->timeout = config('services.ytdlp.timeout', 600) + 30;
+        $baseTimeout = $download->download_playlist
+            ? config('services.ytdlp.playlist_timeout', 3600)
+            : config('services.ytdlp.timeout', 600);
+
+        $this->timeout = (int) $baseTimeout + 30;
+    }
+
+    /**
+     * @return list<object>
+     */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping($this->download->id))
+                ->expireAfter($this->timeout)
+                ->dontRelease(),
+        ];
     }
 
     public function handle(YtDlpService $ytDlp): void
@@ -54,6 +71,8 @@ class ProcessDownloadJob implements ShouldQueue
                 'finished_at' => now(),
             ]);
         } catch (YtDlpException $e) {
+            $this->markFailed($download, $this->formatErrorMessage($e->getMessage()));
+        } catch (Throwable $e) {
             $this->markFailed($download, $this->formatErrorMessage($e->getMessage()));
         }
     }
@@ -88,6 +107,11 @@ class ProcessDownloadJob implements ShouldQueue
 
     private function formatErrorMessage(string $message): string
     {
+        if (str_contains($message, 'attempted too many times')) {
+            return 'O download demorou mais que o limite da fila (retry_after). '
+                .'Defina QUEUE_RETRY_AFTER e QUEUE_WORKER_TIMEOUT (≥ playlist + 120s) no .env e reinicie o worker.';
+        }
+
         if (str_contains($message, 'Sign in to confirm') || str_contains($message, 'not a bot')) {
             return $message.' Configure cookies: see docs/YOUTUBE.md (YTDLP_COOKIES_FILE).';
         }

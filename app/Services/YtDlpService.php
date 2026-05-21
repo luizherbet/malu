@@ -14,10 +14,12 @@ class YtDlpService
         $directory = $this->directoryFor($download);
         Storage::disk('local')->makeDirectory($directory);
 
-        $outputTemplate = Storage::disk('local')->path("{$directory}/%(id)s.%(ext)s");
+        $outputTemplate = $this->outputTemplate($download, $directory);
         $command = $this->buildCommand($download, $outputTemplate);
 
-        $timeout = config('services.ytdlp.timeout', 600);
+        $timeout = $download->download_playlist
+            ? config('services.ytdlp.playlist_timeout', 3600)
+            : config('services.ytdlp.timeout', 600);
 
         $result = Process::timeout($timeout)->run(
             $command,
@@ -35,7 +37,7 @@ class YtDlpService
             );
         }
 
-        return $this->resolveOutputFile($directory);
+        return $this->finalizeOutput($download, $directory);
     }
 
     /**
@@ -47,9 +49,9 @@ class YtDlpService
 
         return array_merge(
             [$binary],
-            ['--no-playlist', '--newline', '--no-overwrites'],
-            $this->extractorOptions(),
-            $this->formatOptions($download),
+            $this->playlistOptions($download),
+            $this->extractorArguments(),
+            $this->audioFormatOptions(),
             ['-o', $outputTemplate],
             [$download->url],
         );
@@ -58,7 +60,15 @@ class YtDlpService
     /**
      * @return list<string>
      */
-    private function extractorOptions(): array
+    public function isMultiVideoPlaylist(string $url): bool
+    {
+        return preg_match('/[?&]list=[^&]+/i', $url) === 1;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function extractorArguments(): array
     {
         $options = [];
 
@@ -86,34 +96,58 @@ class YtDlpService
         return $options;
     }
 
-    private function resolveCookiesPath(): ?string
+    private function playlistOptions(Download $download): array
     {
-        $cookiesFile = config('services.ytdlp.cookies_file');
-        if (! filled($cookiesFile)) {
-            return null;
+        if ($download->download_playlist) {
+            $options = ['--newline', '--no-overwrites', '--ignore-errors'];
+
+            if ($this->isMultiVideoPlaylist($download->url)) {
+                $options[] = '--yes-playlist';
+
+                return $options;
+            }
+
+            $options[] = '--no-playlist';
+            $options[] = '--split-chapters';
+
+            return $options;
         }
 
-        $path = str_starts_with($cookiesFile, '/')
-            ? $cookiesFile
-            : Storage::disk('local')->path($cookiesFile);
+        $options = ['--no-playlist', '--newline', '--no-overwrites'];
 
-        return is_file($path) ? $path : null;
+        if (filled($download->section)) {
+            $options[] = '--download-sections';
+            $options[] = $download->section;
+        }
+
+        return $options;
     }
 
     /**
      * @return list<string>
      */
-    private function formatOptions(Download $download): array
+    private function audioFormatOptions(): array
     {
-        if ($download->format === 'mp3') {
-            return ['-x', '--audio-format', 'mp3'];
+        return [
+            '-f', 'bestaudio/best',
+            '-x', '--audio-format', 'mp3',
+            '--audio-quality', '0',
+        ];
+    }
+
+    private function outputTemplate(Download $download, string $directory): string
+    {
+        $base = Storage::disk('local')->path($directory).'/';
+
+        if (! $download->download_playlist) {
+            return $base.'%(title).200B [%(id)s].%(ext)s';
         }
 
-        return match ($download->quality) {
-            '720p' => ['-f', 'bv*[height<=720]+ba/b[height<=720]/b'],
-            '1080p' => ['-f', 'bv*[height<=1080]+ba/b[height<=1080]/b'],
-            default => ['-f', 'bv*+ba/b'],
-        };
+        if ($this->isMultiVideoPlaylist($download->url)) {
+            return $base.'%(playlist_autonumber)03d-%(title).200B [%(id)s].%(ext)s';
+        }
+
+        return $base.'%(section_number)03d-%(section_title).200B [%(id)s].%(ext)s';
     }
 
     private function directoryFor(Download $download): string
@@ -121,21 +155,47 @@ class YtDlpService
         return "downloads/{$download->id}";
     }
 
-    private function resolveOutputFile(string $directory): string
+    private function finalizeOutput(Download $download, string $directory): string
+    {
+        $files = $this->collectAudioFiles($directory);
+
+        if ($files === []) {
+            throw new YtDlpException('No audio files were produced by yt-dlp.');
+        }
+
+        if ($download->download_playlist) {
+            if (count($files) === 1) {
+                throw new YtDlpException(
+                    'Only one track was downloaded. Use a playlist URL (?list=...) with multiple videos, '
+                    .'or a single video that has chapters (album).',
+                );
+            }
+
+            return $directory;
+        }
+
+        if (count($files) > 1) {
+            throw new YtDlpException('Expected a single audio file. Try enabling playlist mode for multiple tracks.');
+        }
+
+        return $files[0];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function collectAudioFiles(string $directory): array
     {
         $files = Storage::disk('local')->files($directory);
 
-        if ($files === []) {
-            throw new YtDlpException('No output file was produced by yt-dlp.');
-        }
+        $audio = array_values(array_filter(
+            $files,
+            static fn (string $file) => (bool) preg_match('/\.(mp3|m4a|opus|ogg)$/i', $file),
+        ));
 
-        if (count($files) === 1) {
-            return $files[0];
-        }
+        sort($audio, SORT_NATURAL);
 
-        usort($files, fn (string $a, string $b) => Storage::disk('local')->size($b) <=> Storage::disk('local')->size($a));
-
-        return $files[0];
+        return $audio;
     }
 
     private function parseProgress(string $output, ?callable $onProgress): void
@@ -148,5 +208,19 @@ class YtDlpService
             $percent = (int) round((float) end($matches[1]));
             $onProgress(min(99, max(0, $percent)));
         }
+    }
+
+    private function resolveCookiesPath(): ?string
+    {
+        $cookiesFile = config('services.ytdlp.cookies_file');
+        if (! filled($cookiesFile)) {
+            return null;
+        }
+
+        $path = str_starts_with($cookiesFile, '/')
+            ? $cookiesFile
+            : Storage::disk('local')->path($cookiesFile);
+
+        return is_file($path) ? $path : null;
     }
 }

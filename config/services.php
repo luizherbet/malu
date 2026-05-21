@@ -38,6 +38,8 @@ return [
     'ytdlp' => [
         'binary' => env('YTDLP_BINARY', 'yt-dlp'),
         'timeout' => (int) env('YTDLP_TIMEOUT', 600),
+        'playlist_timeout' => (int) env('YTDLP_PLAYLIST_TIMEOUT', 3600),
+        'preview_timeout' => (int) env('YTDLP_PREVIEW_TIMEOUT', 120),
         'js_runtimes' => env('YTDLP_JS_RUNTIMES', 'node'),
         'cookies_file' => env('YTDLP_COOKIES_FILE'),
         'cookies_from_browser' => env('YTDLP_COOKIES_FROM_BROWSER'),

@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'url',
+    'section',
+    'download_playlist',
     'status',
     'progress',
     'format',
@@ -34,6 +36,7 @@ class Download extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'download_playlist' => false,
         'status' => 'queued',
         'progress' => 0,
         'format' => 'mp4',
@@ -43,6 +46,7 @@ class Download extends Model
     protected function casts(): array
     {
         return [
+            'download_playlist' => 'boolean',
             'status' => DownloadStatus::class,
             'progress' => 'integer',
             'finished_at' => 'datetime',

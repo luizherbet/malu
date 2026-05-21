@@ -86,11 +86,19 @@ class DownloadMaintenanceService
 
     private function deleteDownloadFiles(Download $download): bool
     {
+        $disk = Storage::disk('local');
+        $directory = "downloads/{$download->id}";
+
+        if ($download->download_playlist && $disk->exists($directory)) {
+            $disk->deleteDirectory($directory);
+
+            return true;
+        }
+
         if ($download->file_path === null || ! MediaUrlValidator::isSafeStoragePath($download->file_path)) {
             return false;
         }
 
-        $disk = Storage::disk('local');
         $deleted = false;
 
         if ($disk->exists($download->file_path)) {
@@ -98,14 +106,9 @@ class DownloadMaintenanceService
             $deleted = true;
         }
 
-        $directory = dirname($download->file_path);
-
-        if ($directory !== '.' && $directory !== 'downloads' && $disk->exists($directory)) {
-            $remaining = $disk->allFiles($directory);
-
-            if ($remaining === []) {
-                $disk->deleteDirectory($directory);
-            }
+        if ($disk->exists($directory)) {
+            $disk->deleteDirectory($directory);
+            $deleted = true;
         }
 
         return $deleted;

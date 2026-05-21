@@ -27,8 +27,8 @@ class DownloadJobLifecycleTest extends TestCase
                         $onProgress(42);
                     }
 
-                    $path = "downloads/{$download->id}/video.mp4";
-                    Storage::disk('local')->put($path, 'fake video content');
+                    $path = "downloads/{$download->id}/song.mp3";
+                    Storage::disk('local')->put($path, 'fake audio');
 
                     return $path;
                 });
@@ -36,8 +36,6 @@ class DownloadJobLifecycleTest extends TestCase
 
         $response = $this->postJson('/api/jobs', [
             'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            'format' => 'mp4',
-            'quality' => '720p',
         ]);
 
         $response->assertCreated()
@@ -57,12 +55,11 @@ class DownloadJobLifecycleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'done')
             ->assertJsonPath('data.progress', 100)
-            ->assertJsonPath('data.file_name', 'video.mp4')
-            ->assertJsonPath('data.download_url', route('jobs.file', $download->id));
+            ->assertJsonPath('data.tracks.0.name', 'song.mp3');
 
         $fileResponse = $this->get("/api/jobs/{$download->id}/file");
         $fileResponse->assertOk();
-        $this->assertStringContainsString('video.mp4', $fileResponse->headers->get('content-disposition', ''));
+        $this->assertStringContainsString('song.mp3', $fileResponse->headers->get('content-disposition', ''));
     }
 
     public function test_job_failure_surfaces_error_via_api(): void
@@ -89,6 +86,38 @@ class DownloadJobLifecycleTest extends TestCase
             ->assertJsonPath('data.error', $download->error);
 
         $this->get("/api/jobs/{$download->id}/file")->assertNotFound();
+    }
+
+    public function test_playlist_job_stores_directory_with_separate_tracks(): void
+    {
+        Storage::fake('local');
+
+        $download = Download::factory()->create([
+            'url' => 'https://www.youtube.com/playlist?list=PLtest',
+            'download_playlist' => true,
+        ]);
+
+        $directory = "downloads/{$download->id}";
+
+        $this->mock(YtDlpService::class, function ($mock) use ($directory): void {
+            $mock->shouldReceive('run')->once()->andReturnUsing(function () use ($directory): string {
+                Storage::disk('local')->put("{$directory}/001-a.mp3", 'a');
+                Storage::disk('local')->put("{$directory}/002-b.mp3", 'b');
+
+                return $directory;
+            });
+        });
+
+        ProcessDownloadJob::dispatchSync($download);
+
+        $download->refresh();
+        $this->assertSame(DownloadStatus::Done, $download->status);
+        $this->assertSame($directory, $download->file_path);
+
+        $response = $this->getJson("/api/jobs/{$download->id}");
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data.tracks');
     }
 
     public function test_stale_processing_job_is_expired_by_maintenance(): void

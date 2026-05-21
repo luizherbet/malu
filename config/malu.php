@@ -16,4 +16,19 @@ return [
 
     'prune_records' => (bool) env('DOWNLOAD_PRUNE_RECORDS', true),
 
+    /*
+    | Redis/database queue retry_after must exceed the longest download job.
+    | Otherwise the worker is still running yt-dlp but Redis re-queues the job.
+    */
+    'queue' => [
+        'retry_after' => (int) env(
+            'QUEUE_RETRY_AFTER',
+            (int) env('YTDLP_PLAYLIST_TIMEOUT', 3600) + 120,
+        ),
+        'worker_timeout' => (int) env(
+            'QUEUE_WORKER_TIMEOUT',
+            (int) env('YTDLP_PLAYLIST_TIMEOUT', 3600) + 120,
+        ),
+    ],
+
 ];
