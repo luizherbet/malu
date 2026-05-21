@@ -8,6 +8,7 @@ use App\Http\Requests\StoreDownloadRequest;
 use App\Http\Resources\DownloadResource;
 use App\Jobs\ProcessDownloadJob;
 use App\Models\Download;
+use App\Services\DownloadQuotaService;
 use App\Support\MediaUrlValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,9 +17,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DownloadController extends Controller
 {
-    public function store(StoreDownloadRequest $request): JsonResponse
+    public function store(StoreDownloadRequest $request, DownloadQuotaService $quota): JsonResponse
     {
         $this->authorize('create', Download::class);
+
+        $quota->assertCanStart($request->user()?->id);
 
         $data = $request->validated();
 

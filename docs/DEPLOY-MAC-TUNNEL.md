@@ -161,6 +161,17 @@ Login: `malu@malu.com` + senha.
 
 ---
 
+## Limites de download (proteger o Mac)
+
+No `.env`:
+
+```env
+MALU_MAX_ACTIVE_DOWNLOADS=1   # só 1 faixa baixando por vez (recomendado no Mac)
+MALU_MAX_DOWNLOADS_PER_DAY=20 # máximo de jobs por 24h
+```
+
+A interface mostra o uso (`Hoje: 3/20 · Em andamento: 1/1`). Ao atingir o limite, novos cliques em **Baixar** são bloqueados até liberar vaga.
+
 ## Comandos úteis
 
 ```bash

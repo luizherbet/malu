@@ -1,6 +1,6 @@
 <script setup>
-import { onUnmounted, reactive, ref } from 'vue';
-import { createDownload, downloadJobFile, fetchDownload } from '../api/downloads';
+import { onMounted, onUnmounted, reactive, ref } from 'vue';
+import { createDownload, downloadJobFile, fetchDownload, fetchDownloadQuota } from '../api/downloads';
 
 const props = defineProps({
     sourceUrl: {
@@ -18,6 +18,7 @@ const emit = defineEmits(['back']);
 const trackJobs = reactive({});
 const pollTimers = ref({});
 const downloadingFile = ref({});
+const quota = ref(null);
 
 const terminalStatuses = ['done', 'failed'];
 
@@ -40,12 +41,22 @@ function stopAllPolling() {
     Object.keys(pollTimers.value).forEach(stopPolling);
 }
 
+async function loadQuota() {
+    try {
+        const { data } = await fetchDownloadQuota();
+        quota.value = data;
+    } catch {
+        quota.value = null;
+    }
+}
+
 async function refreshJob(key, jobId) {
     const { data } = await fetchDownload(jobId);
     trackJobs[key] = data;
 
     if (terminalStatuses.includes(data.status)) {
         stopPolling(key);
+        await loadQuota();
     }
 }
 
@@ -59,11 +70,31 @@ function startPolling(key, jobId) {
     }, 2000);
 }
 
+function canStartDownload(track) {
+    if (quota.value && !quota.value.can_start) {
+        return false;
+    }
+
+    const existing = jobFor(track);
+
+    return !existing || !['queued', 'processing'].includes(existing.status);
+}
+
 async function downloadTrack(track) {
     const key = trackKey(track);
     const existing = jobFor(track);
 
     if (existing && ['queued', 'processing'].includes(existing.status)) {
+        return;
+    }
+
+    if (quota.value && !quota.value.can_start) {
+        trackJobs[key] = {
+            status: 'failed',
+            progress: 0,
+            error: 'Limite de downloads atingido. Aguarde ou tente amanhã.',
+        };
+
         return;
     }
 
@@ -76,6 +107,7 @@ async function downloadTrack(track) {
         });
 
         trackJobs[key] = data;
+        await loadQuota();
         startPolling(key, data.id);
     } catch (error) {
         trackJobs[key] = {
@@ -155,6 +187,8 @@ function progressWidth(track) {
     return '0%';
 }
 
+onMounted(loadQuota);
+
 onUnmounted(stopAllPolling);
 </script>
 
@@ -168,6 +202,17 @@ onUnmounted(stopAllPolling);
                 ← Outro link
             </button>
         </div>
+
+        <p
+            v-if="quota"
+            class="rounded-lg bg-stone-100 px-3 py-2 text-xs text-stone-600 dark:bg-stone-800/60 dark:text-stone-300"
+        >
+            Hoje: {{ quota.today }}/{{ quota.max_per_day }} downloads
+            · Em andamento: {{ quota.active }}/{{ quota.max_active }}
+            <span v-if="!quota.can_start" class="block mt-1 text-rose-600 dark:text-rose-400">
+                Limite atingido — aguarde a faixa atual ou tente amanhã.
+            </span>
+        </p>
 
         <ul
             class="max-h-[min(28rem,60dvh)] space-y-2 overflow-y-auto overscroll-contain rounded-xl border border-stone-200 p-2 dark:border-stone-700"
@@ -203,7 +248,7 @@ onUnmounted(stopAllPolling);
                             v-else
                             type="button"
                             class="malu-btn-primary w-full sm:min-w-[6.5rem] sm:w-auto"
-                            :disabled="isBusy(track)"
+                            :disabled="isBusy(track) || !canStartDownload(track)"
                             @click="downloadTrack(track)"
                         >
                             {{ buttonLabel(track) }}

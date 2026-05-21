@@ -32,6 +32,8 @@
         <env name="MALU_AUTH_EMAIL" value="malu@malu.com"/>
         <env name="MALU_AUTH_PASSWORD" value="test-secret"/>
         <env name="MALU_JWT_SECRET" value="test-jwt-secret-key-must-be-at-least-32-chars"/>
+        <env name="MALU_MAX_ACTIVE_DOWNLOADS" value="10"/>
+        <env name="MALU_MAX_DOWNLOADS_PER_DAY" value="100"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

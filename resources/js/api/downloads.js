@@ -1,5 +1,9 @@
 import { apiDownload, apiFetch } from './client';
 
+export function fetchDownloadQuota() {
+    return apiFetch('/api/downloads/quota');
+}
+
 export function previewPlaylist(url) {
     return apiFetch('/api/playlists/preview', {
         method: 'POST',

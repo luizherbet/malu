@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { clearToken, fetchConfig, fetchUser, getToken, logout } from './api/auth';
 import { previewPlaylist } from './api/downloads';
+import AppFooter from './components/AppFooter.vue';
 import AppHeader from './components/AppHeader.vue';
 import AuthPanel from './components/AuthPanel.vue';
 import DownloadForm from './components/DownloadForm.vue';
@@ -75,7 +76,7 @@ function reset() {
 
 <template>
     <div class="min-h-dvh bg-stone-50 dark:bg-stone-950">
-        <main class="malu-shell flex min-h-dvh flex-col justify-center">
+        <main class="malu-shell flex min-h-dvh flex-col justify-center py-6">
             <div v-if="booting" class="malu-card py-12 text-center">
                 <p class="malu-muted">Carregando…</p>
             </div>
@@ -109,12 +110,7 @@ function reset() {
                     </template>
                 </div>
 
-                <p
-                    v-if="!needsAuth() && !booting"
-                    class="malu-muted mt-4 text-center text-xs leading-relaxed"
-                >
-                    Uso pessoal. Respeite os direitos autorais das músicas.
-                </p>
+                <AppFooter />
             </template>
         </main>
     </div>

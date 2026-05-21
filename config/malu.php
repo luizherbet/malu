@@ -12,6 +12,11 @@ return [
 
     'jwt_ttl_minutes' => (int) env('MALU_JWT_TTL_MINUTES', 10080),
 
+    'downloads' => [
+        'max_active' => (int) env('MALU_MAX_ACTIVE_DOWNLOADS', 1),
+        'max_per_day' => (int) env('MALU_MAX_DOWNLOADS_PER_DAY', 20),
+    ],
+
     'rate_limit' => [
         'store' => (int) env('DOWNLOAD_RATE_LIMIT_STORE', 10),
         'read' => (int) env('DOWNLOAD_RATE_LIMIT_READ', 60),

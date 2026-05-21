@@ -61,4 +61,8 @@
     .malu-muted {
         @apply text-sm text-stone-500 dark:text-stone-400;
     }
+
+    .malu-footer {
+        @apply border-t border-stone-200/80 pt-5 dark:border-stone-700/80;
+    }
 }
