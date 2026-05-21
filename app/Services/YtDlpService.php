@@ -48,10 +48,56 @@ class YtDlpService
         return array_merge(
             [$binary],
             ['--no-playlist', '--newline', '--no-overwrites'],
+            $this->extractorOptions(),
             $this->formatOptions($download),
             ['-o', $outputTemplate],
             [$download->url],
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function extractorOptions(): array
+    {
+        $options = [];
+
+        $jsRuntimes = config('services.ytdlp.js_runtimes');
+        if (filled($jsRuntimes)) {
+            $options[] = '--js-runtimes';
+            $options[] = $jsRuntimes;
+        }
+
+        $cookiesPath = $this->resolveCookiesPath();
+        if ($cookiesPath !== null) {
+            $options[] = '--cookies';
+            $options[] = $cookiesPath;
+        } elseif (filled($browser = config('services.ytdlp.cookies_from_browser'))) {
+            $options[] = '--cookies-from-browser';
+            $options[] = $browser;
+        }
+
+        $sleepRequests = config('services.ytdlp.sleep_requests');
+        if ($sleepRequests > 0) {
+            $options[] = '--sleep-requests';
+            $options[] = (string) $sleepRequests;
+        }
+
+        return $options;
+    }
+
+    private function resolveCookiesPath(): ?string
+    {
+        $cookiesFile = config('services.ytdlp.cookies_file');
+        if (! filled($cookiesFile)) {
+            return null;
+        }
+
+        $path = str_starts_with($cookiesFile, '/')
+            ? $cookiesFile
+            : Storage::disk('local')->path($cookiesFile);
+
+        return is_file($path) ? $path : null;
     }
 
     /**

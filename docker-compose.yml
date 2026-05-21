@@ -7,7 +7,6 @@ services:
       - "${APP_PORT:-8000}:8000"
     volumes:
       - .:/var/www/html
-      - vendor:/var/www/html/vendor
     environment:
       APP_URL: "${APP_URL:-http://localhost:8000}"
       REDIS_HOST: redis
@@ -23,15 +22,12 @@ services:
       target: development
     volumes:
       - .:/var/www/html
-      - vendor:/var/www/html/vendor
     environment:
       REDIS_HOST: redis
       QUEUE_CONNECTION: redis
     depends_on:
       redis:
         condition: service_healthy
-      app:
-        condition: service_started
     command:
       [
         "php",
@@ -48,7 +44,6 @@ services:
       target: development
     volumes:
       - .:/var/www/html
-      - vendor:/var/www/html/vendor
     environment:
       REDIS_HOST: redis
     depends_on:
@@ -66,6 +61,3 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-
-volumes:
-  vendor:

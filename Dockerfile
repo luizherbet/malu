@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM php:8.3-cli-bookworm AS base
+FROM php:8.4-cli-bookworm AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -9,6 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     libsqlite3-dev \
     && docker-php-ext-install pdo_sqlite \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js required by yt-dlp for YouTube (EJS extractor)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
@@ -20,10 +25,6 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/html
 
 FROM base AS development
-
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint

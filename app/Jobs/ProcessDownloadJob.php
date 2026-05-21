@@ -54,7 +54,7 @@ class ProcessDownloadJob implements ShouldQueue
                 'finished_at' => now(),
             ]);
         } catch (YtDlpException $e) {
-            $this->markFailed($download, $e->getMessage());
+            $this->markFailed($download, $this->formatErrorMessage($e->getMessage()));
         }
     }
 
@@ -71,7 +71,10 @@ class ProcessDownloadJob implements ShouldQueue
             'message' => $exception?->getMessage(),
         ]);
 
-        $this->markFailed($download, $exception?->getMessage() ?? 'Download job failed.');
+        $this->markFailed(
+            $download,
+            $this->formatErrorMessage($exception?->getMessage() ?? 'Download job failed.'),
+        );
     }
 
     private function markFailed(Download $download, string $message): void
@@ -81,5 +84,18 @@ class ProcessDownloadJob implements ShouldQueue
             'error' => mb_substr($message, 0, 2000),
             'finished_at' => now(),
         ]);
+    }
+
+    private function formatErrorMessage(string $message): string
+    {
+        if (str_contains($message, 'Sign in to confirm') || str_contains($message, 'not a bot')) {
+            return $message.' Configure cookies: see docs/YOUTUBE.md (YTDLP_COOKIES_FILE).';
+        }
+
+        if (str_contains($message, 'HTTP Error 429')) {
+            return $message.' YouTube rate limit — wait a few minutes or use cookies (docs/YOUTUBE.md).';
+        }
+
+        return $message;
     }
 }

@@ -43,6 +43,7 @@ Configure no `.env`:
 - `QUEUE_CONNECTION=redis`
 - `REDIS_CLIENT=predis` (ou `phpredis` se a extensão estiver instalada)
 - `YTDLP_BINARY=yt-dlp`
+- YouTube: [docs/YOUTUBE.md](docs/YOUTUBE.md) (cookies + Node)
 
 ## Desenvolvimento
 

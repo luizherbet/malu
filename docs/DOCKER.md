@@ -6,6 +6,7 @@ Stack completo com um comando: app HTTP, worker de fila, scheduler e Redis.
 
 - Docker 24+
 - Docker Compose v2
+- Imagem PHP **8.4+** (Symfony 8 / Laravel 13 no `composer.lock`)
 
 ## Subir o projeto
 
@@ -66,6 +67,7 @@ docker build --target production -t malu:latest .
 
 ## Notas
 
-- O volume `vendor` evita sobrescrever dependências PHP do host (macOS/Linux).
+- O projeto no host usa bind mount completo (inclui `vendor/` após `composer install` local).
+- Se containers falharem após upgrade de PHP, rode: `docker compose down -v && docker compose up --build`
 - `yt-dlp` e `ffmpeg` já vêm na imagem.
 - Para desenvolvimento frontend com HMR, use `npm run dev` no host ou adicione um serviço Vite ao Compose.
