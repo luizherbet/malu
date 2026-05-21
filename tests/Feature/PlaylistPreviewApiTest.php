@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Exceptions\YtDlpException;
+use App\Models\Download;
 use App\Services\PlaylistPreviewService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class PlaylistPreviewApiTest extends TestCase
@@ -72,7 +74,7 @@ class PlaylistPreviewApiTest extends TestCase
 
     public function test_store_accepts_section_for_chapter_download(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
 
         $response = $this->postJson('/api/jobs', [
             'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
@@ -81,6 +83,6 @@ class PlaylistPreviewApiTest extends TestCase
 
         $response->assertCreated();
 
-        $this->assertSame('Intro', \App\Models\Download::first()->section);
+        $this->assertSame('Intro', Download::first()->section);
     }
 }
